@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Job Applications Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>📈 Job Applications Dashboard</h1>
+
+    <h2>Timeline of Applications</h2>
+    <canvas id="timelineChart" width="1000" height="400"></canvas>
+
+    <h2>Status Summary</h2>
+    <canvas id="statusChart" width="500" height="400"></canvas>
+
+    <h2>Top Companies</h2>
+    <canvas id="companyChart" width="1000" height="400"></canvas>
+
+    <script>
+        async function fetchData() {
+            const response = await fetch('/data');
+            const data = await response.json();
+
+            const monthlyApplications = {};
+            const statusCount = { Applied: 0, Rejected: 0 };
+            const companyApplications = {};
+
+            data.forEach(app => {
+                const date = new Date(app.ApplyDate);
+                const month = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+
+                if (month) {
+                    monthlyApplications[month] = (monthlyApplications[month] || 0) + 1;
+                }
+
+                if (app.Status) {
+                    statusCount[app.Status] = (statusCount[app.Status] || 0) + 1;
+                }
+
+                const company = app.Company.split('<')[0].trim(); // cleaner company name
+                if (company) {
+                    companyApplications[company] = (companyApplications[company] || 0) + 1;
+                }
+            });
+
+            // Prepare Timeline Chart
+            const months = Object.keys(monthlyApplications).sort();
+            const monthCounts = months.map(m => monthlyApplications[m]);
+
+            const timelineCtx = document.getElementById('timelineChart').getContext('2d');
+            new Chart(timelineCtx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Applications per Month',
+                        data: monthCounts,
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Prepare Status Chart
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            new Chart(statusCtx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(statusCount),
+                    datasets: [{
+                        data: Object.values(statusCount),
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.5)',
+                            'rgba(255, 99, 132, 0.5)'
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+
+            // Prepare Company Chart
+            const sortedCompanies = Object.entries(companyApplications)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10); // top 10 companies
+
+            const companyCtx = document.getElementById('companyChart').getContext('2d');
+            new Chart(companyCtx, {
+                type: 'bar',
+                data: {
+                    labels: sortedCompanies.map(c => c[0]),
+                    datasets: [{
+                        label: 'Applications per Company',
+                        data: sortedCompanies.map(c => c[1]),
+                        backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+        }
+
+        fetchData();
+    </script>
+
+</body>
+</html>

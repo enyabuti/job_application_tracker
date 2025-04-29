@@ -1,0 +1,6 @@
+# Ignore Google API credentials and tokens
+credentials.json
+token.json
+
+# Node modules (optional but recommended)
+node_modules/
